@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResult } from 'fuse.js';
 import { useGameStore } from '@/lib/store';
 import { Player } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 const PlayerSearch = () => {
   const { players, actions } = useGameStore();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Fuse.FuseResult<Player>[]>([]);
+  const [results, setResults] = useState<FuseResult<Player>[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const debouncedQuery = useDebounce(query, 200);
   const resultContainerRef = useRef<HTMLDivElement>(null);
