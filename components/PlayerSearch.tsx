@@ -15,9 +15,10 @@ const PlayerSearch = () => {
   const resultContainerRef = useRef<HTMLDivElement>(null);
 
   const fuse = new Fuse(players, {
-    keys: ['name', 'nameNorm', 'team'],
-    threshold: 0.3,
+    keys: ['name', 'nameNorm'],
+    threshold: 0.4,
     includeScore: true,
+    ignoreLocation: true,
   });
 
   useEffect(() => {

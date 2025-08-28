@@ -17,6 +17,7 @@
 # Misc
 .DS_Store
 *.pem
+*.bak
 
 # Mac
 .DS_Store
@@ -43,6 +44,6 @@ Temporary Items
 .apdisk
 
 # Python
-venv/
+/venv/
 __pycache__/
 *.pyc

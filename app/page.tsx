@@ -20,11 +20,11 @@ export default function Home() {
   } = useGameStore();
 
   useEffect(() => {
-    actions.fetchPlayers();
+    actions.fetchDataAndStartGame();
   }, [actions]);
 
   const handleRetry = () => {
-    actions.fetchPlayers();
+    actions.fetchDataAndStartGame();
   };
 
   return (

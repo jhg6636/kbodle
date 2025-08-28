@@ -17,7 +17,7 @@ const ResultBoard = () => {
             <TableHead>포지션</TableHead>
             <TableHead>투</TableHead>
             <TableHead>타</TableHead>
-            <TableHead>국적</TableHead>
+            
             <TableHead>나이</TableHead>
             <TableHead>등번호</TableHead>
           </TableRow>

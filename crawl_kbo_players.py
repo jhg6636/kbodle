@@ -1,3 +1,4 @@
+
 import json
 import re
 from selenium import webdriver
@@ -25,7 +26,7 @@ def get_player_links(driver):
     return links
 
 def get_player_details(driver, url_path):
-    """선수 상세 페이지로 이동하여 상세 정보를 수집합니다. (선수명 추출 수정)"""
+    """선수 상세 페이지로 이동하여 상세 정보를 수집하고 변환합니다."""
     base_url = "https://www.koreabaseball.com"
     full_url = f"{base_url}{url_path}"
     driver.get(full_url)
@@ -52,31 +53,52 @@ def get_player_details(driver, url_path):
                         value = span.text.strip()
                         info_dict[key] = value
 
-        position_raw = info_dict.get('포지션', '')
-        position = position_raw
-        handedness = ''
-        match = re.search(r'\((.*?)\)', position_raw)
-        if match:
-            handedness = match.group(1)
-            position = position_raw.replace(f'({handedness})', '').strip()
-
-        number = info_dict.get('등번호', '').replace('No.', '').strip()
-        name = info_dict.get('선수명', '') # 수정된 부분
+        name = info_dict.get('선수명', '')
+        jersey_number_str = info_dict.get('등번호', '').replace('No.', '').strip()
         
+        if not jersey_number_str or len(jersey_number_str) >= 3:
+            return None
+
+        position_map = {"투수": "P", "포수": "C", "내야수": "IF", "외야수": "OF"}
+        position_raw = info_dict.get('포지션', '')
+        position_group = next((v for k, v in position_map.items() if k in position_raw), "")
+
+        handedness_raw = info_dict.get('포지션', '')
+        throws, bats = '', ''
+        match = re.search(r'\((.*?)\)', handedness_raw)
+        if match:
+            hand_info = match.group(1)
+            throws_map = {"우": "R", "좌": "L", "언": "R"}
+            bats_map = {"우": "R", '좌': "L", "양": "S"}
+            throws = throws_map.get(hand_info[0], '')
+            bats = bats_map.get(hand_info[-1], '')
+
+        date_str = info_dict.get('생년월일', '')
+        date_str = date_str.replace('년', '-').replace('월', '-').replace('일', '').replace('.', '-').replace(' ','').strip()
+        parts = date_str.split('-')
+        birth_date = '-'.join([p.zfill(2) for p in parts]) if len(parts) == 3 else ''
+
+        player_id = int(re.search(r'playerId=(\d+)', url_path).group(1)) if re.search(r'playerId=(\d+)', url_path) else 0
+
         team_tag = soup.select_one('#h4Team')
         team_name = team_tag.text.strip() if team_tag else ''
 
         return {
-            '선수명': name,
-            '등번호': number,
-            '생년월일': info_dict.get('생년월일', ''),
-            '포지션': position,
-            '투타': handedness,
-            '팀명': team_name
+            "id": player_id,
+            "name": name,
+            "nameNorm": name.lower().replace(' ', ''),
+            "team": team_name,
+            "positionGroup": position_group,
+            "positionDetail": position_raw,
+            "throws": throws,
+            "bats": bats,
+            "birthDate": birth_date,
+            "nationality": "KR",
+            "jerseyNumber": int(jersey_number_str)
         }
 
     except Exception as e:
-        print(f"- 상세 정보 수집 중 오류 ({full_url}): {e}")
+        print(f"- 상세 정보 수집/변환 중 오류 ({full_url}): {e}")
         return None
 
 def crawl_kbo_players():
@@ -92,15 +114,20 @@ def crawl_kbo_players():
     all_player_data = []
 
     try:
-        print("--- 1단계: 모든 선수들의 상세 페이지 링크를 수집합니다. ---")
+        # 먼저 전체 팀 목록을 한 번만 가져옴
+        print("--- 전체 팀 목록을 가져옵니다. ---")
         driver.get(url)
         team_select_element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'cphContents_cphContents_cphContents_ddlTeam')))
         team_select = Select(team_select_element)
         team_values = [opt.get_attribute('value') for opt in team_select.options if opt.get_attribute('value') != '0']
 
+        print("--- 1단계: 모든 선수들의 상세 페이지 링크를 수집합니다. ---")
         for team_value in team_values:
             try:
-                team_select = Select(WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'cphContents_cphContents_cphContents_ddlTeam'))))
+                # 매 팀마다 페이지를 새로고침하여 상태 초기화
+                driver.get(url)
+                team_select_element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'cphContents_cphContents_cphContents_ddlTeam')))
+                team_select = Select(team_select_element)
                 team_select.select_by_value(team_value)
                 team_name = team_select.first_selected_option.text
                 print(f"\n'{team_name}' 팀 링크 수집 시작...")
@@ -114,7 +141,6 @@ def crawl_kbo_players():
                     
                     try:
                         old_tbody = driver.find_element(By.CSS_SELECTOR, "table.tEx tbody")
-                        
                         pagination = driver.find_element(By.CLASS_NAME, "paging")
                         page_links = pagination.find_elements(By.TAG_NAME, "a")
                         
@@ -140,16 +166,15 @@ def crawl_kbo_players():
 
         print("--- 2단계: 각 선수 상세 페이지를 방문하여 정보를 수집합니다. ---")
         for i, link in enumerate(unique_links):
-            print(f"({i+1}/{len(unique_links)}) 수집 중: {link}")
             details = get_player_details(driver, link)
             if details:
                 all_player_data.append(details)
-            time.sleep(0.1)
+            time.sleep(0.05)
 
         with open('public/players_2025.json', 'w', encoding='utf-8') as f:
             json.dump(all_player_data, f, ensure_ascii=False, indent=4)
 
-        print(f"\n--- 최종 완료: 총 {len(all_player_data)}명의 선수 데이터를 저장했습니다.")
+        print(f"\n--- 최종 완료: 총 {len(all_player_data)}명의 선수 데이터를 필터링하여 저장했습니다. ---")
 
     except Exception as e:
         print(f"스크립트 실행 중 치명적인 오류가 발생했습니다: {e}")

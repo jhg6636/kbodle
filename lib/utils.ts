@@ -15,7 +15,7 @@ export interface JudgementResult {
   position: ResultStatus;
   throws: ResultStatus;
   bats: ResultStatus;
-  nationality: ResultStatus;
+  
   age: Direction;
   jerseyNumber: Direction;
   isCorrect: boolean;
@@ -35,13 +35,10 @@ export function compareGuess(secret: Player, guess: Player): JudgementResult {
 
   const result: JudgementResult = {
     team: secret.team === guess.team ? "correct" : "incorrect",
-    position: 
-      secret.positionDetail === guess.positionDetail ? "correct" :
-      secret.positionGroup === guess.positionGroup ? "partial" :
-      "incorrect",
+    position: secret.positionGroup === guess.positionGroup ? "correct" : "incorrect",
     throws: secret.throws === guess.throws ? "correct" : "incorrect",
     bats: secret.bats === guess.bats ? "correct" : "incorrect",
-    nationality: secret.nationality === guess.nationality ? "correct" : "incorrect",
+    
     age: 
       secretAge === guessAge ? "correct" :
       secretAge > guessAge ? "up" : "down",
@@ -51,7 +48,7 @@ export function compareGuess(secret: Player, guess: Player): JudgementResult {
     isCorrect: false,
   };
 
-  result.isCorrect = Object.values(result).every(val => val === 'correct');
+  result.isCorrect = secret.id === guess.id;
 
   return result;
 }

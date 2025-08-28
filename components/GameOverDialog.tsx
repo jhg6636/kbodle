@@ -38,7 +38,9 @@ const GameOverDialog = () => {
         <DialogHeader>
           <DialogTitle>{gameStatus === 'won' ? '승리!' : '패배'}</DialogTitle>
           <DialogDescription>
-            정답은 <strong>{secretPlayer?.name}</strong> 선수였습니다.
+            {gameStatus === 'won' 
+              ? "축하합니다! 정답을 맞히셨습니다."
+              : `정답은 <strong>{secretPlayer?.name}</strong> 선수였습니다.`}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 mt-4">
