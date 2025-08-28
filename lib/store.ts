@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { Player } from '@/lib/types';
 import { compareGuess, JudgementResult } from '@/lib/utils';
@@ -19,6 +18,7 @@ interface GameState {
   actions: {
     fetchDataAndStartGame: () => Promise<void>;
     addGuess: (player: Player) => void;
+    restartGame: () => void; // 다시 시작 액션 추가
   };
 }
 
@@ -33,7 +33,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   error: null,
   actions: {
     fetchDataAndStartGame: async () => {
-      if (get().players.length > 0) return; // 이미 로드되었으면 실행 안 함
+      if (get().players.length > 0) return;
 
       set({ isDataLoading: true, error: null });
       try {
@@ -48,7 +48,6 @@ export const useGameStore = create<GameState>((set, get) => ({
         const players = await playerResponse.json();
         const dailySequence = await sequenceResponse.json();
 
-        // 오늘의 선수 결정
         const today = new Date();
         const dayIndex = differenceInDays(today, EPOCH_DATE) % dailySequence.length;
         const secretPlayerId = dailySequence[dayIndex];
@@ -89,6 +88,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
 
       set({ guesses: newGuesses, results: newResults, gameStatus: newGameStatus });
+    },
+    restartGame: () => {
+      // 정답 선수는 바꾸지 않고, 추측 기록만 리셋
+      set({
+        guesses: [],
+        results: [],
+        gameStatus: 'playing',
+      });
     },
   },
 }));

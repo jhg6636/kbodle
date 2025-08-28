@@ -44,7 +44,7 @@ const GameOverDialog = () => {
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 mt-4">
-          <Button onClick={actions.startGame} className="w-full">다시 시작</Button>
+          <Button onClick={actions.restartGame} className="w-full">다시 시작</Button>
           <Button onClick={handleShare} variant="secondary" className="w-full">
             {isCopied ? '복사 완료!' : '결과 공유하기'}
           </Button>
